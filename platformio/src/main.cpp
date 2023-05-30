@@ -23,6 +23,12 @@ void SystemClock_Config(void) {
   while (!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {
   }
 
+  __HAL_RCC_SYSCFG_CLK_ENABLE();
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
+
+  while (!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {
+  }
+
   /** Initializes the RCC Oscillators according to the specified parameters
    * in the RCC_OscInitTypeDef structure.
    */
@@ -31,7 +37,7 @@ void SystemClock_Config(void) {
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 5;
-  RCC_OscInitStruct.PLL.PLLN = 160;
+  RCC_OscInitStruct.PLL.PLLN = 192;
   RCC_OscInitStruct.PLL.PLLP = 2;
   RCC_OscInitStruct.PLL.PLLQ = 2;
   RCC_OscInitStruct.PLL.PLLR = 2;
@@ -66,7 +72,7 @@ void SystemClock_Config(void) {
 
 void defaultTask(void *argument) {
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-
+  // const int f_cpu = F_CPU;
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
   for (;;) {
@@ -78,7 +84,14 @@ void defaultTask(void *argument) {
   }
 }
 
+// TODO: This file is main.cpp. Should this variable be declared 
+// C extern? 
+volatile int uxTopUsedPriority;
+
+
 int main(void) {
+  uxTopUsedPriority = configMAX_PRIORITIES - 1;
+
   HAL_Init();
   SystemClock_Config();
   MX_GPIO_Init();
@@ -97,8 +110,10 @@ int main(void) {
   // osThreadNew(defaultTask, NULL, &defaultTask_attributes);
 
   TaskHandle_t xHandle = NULL;
-  xTaskCreate(defaultTask, "T1", 1000/sizeof(StackType_t), nullptr, 10, &xHandle);
-  xTaskCreate(defaultTask, "T2", 1000/sizeof(StackType_t), nullptr, 10, &xHandle);
+  xTaskCreate(defaultTask, "T1", 1000 / sizeof(StackType_t), nullptr, 10,
+              &xHandle);
+  xTaskCreate(defaultTask, "T2", 1000 / sizeof(StackType_t), nullptr, 10,
+              &xHandle);
 
   vTaskStartScheduler();
 
@@ -108,8 +123,7 @@ int main(void) {
   while (1) {
     vTaskDelay(10);
 
-   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
   }
 }
 
